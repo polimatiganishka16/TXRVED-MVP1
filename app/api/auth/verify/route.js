@@ -59,7 +59,7 @@ export async function GET(request) {
             console.error("ERROR SENDING VERIFICATION EMAIL:", emailError);
         }
 
-        return NextResponse.redirect('http://localhost:3000/login?verified=true');
+        return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/login?verified=true`);
 
     } catch (error) {
         console.error('VERIFY ERROR', error);

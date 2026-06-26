@@ -57,7 +57,7 @@ export async function POST(req) {
         });
 
         const displayName = user.name ? user.name : 'there';
-        const verificationUrl = `http://localhost:3000/api/auth/verify?token=${verificationToken}`;
+        const verificationUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/verify?token=${verificationToken}`;
         const subject = 'Verify your IECBP Account';
         const html = `
             <p>Hi ${displayName},</p>

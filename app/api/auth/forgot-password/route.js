@@ -32,7 +32,7 @@ export async function POST(req) {
         });
 
         const displayName = user.name ? user.name : 'there';
-        const resetUrl = `http://localhost:3000/reset-password?token=${resetToken}`;
+        const resetUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/reset-password?token=${resetToken}`;
         const subject = 'Reset your IECBP Password';
         const html = `
             <p>Hi ${displayName},</p>

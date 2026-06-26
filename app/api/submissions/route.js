@@ -105,7 +105,7 @@ export async function POST(req) {
         scenarioId,
         attemptId: Number(attemptId),
         candidateId,
-       submittedAt: new Date().toISOString(),
+        submittedAt: new Date().toISOString(),
       },
     });
 
@@ -149,7 +149,7 @@ export async function POST(req) {
         });
 
         if (user && user.candidate) {
-         const submittedDt = new Date(submission.submittedAt);
+          const submittedDt = new Date(submission.submittedAt);
           const submissionDate = submittedDt.toLocaleDateString('en-IN');
           const submissionTime = submittedDt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
@@ -235,7 +235,7 @@ export async function POST(req) {
     // ─────────────────────────────────────
 
     const evaluationResponse = await fetch(
-      'http://localhost:3000/api/evaluation/evaluate',
+      `${process.env.NEXT_PUBLIC_BASE_URL}/api/evaluation/evaluate`,
       {
         method: 'POST',
 

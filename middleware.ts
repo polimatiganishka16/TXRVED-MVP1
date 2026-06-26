@@ -25,7 +25,7 @@ async function validateSession(req: NextRequest) {
     }
 
     return {
-        role: 'CANDIDATE',
+        role: 'CANDIDATE'
     };
 }
 
