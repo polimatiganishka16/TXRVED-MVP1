@@ -26,7 +26,7 @@ export default function ProfileMenu() {
     const handleLogout = async () => {
         try { await performLogout(); } catch (e) { }
         try { clearAuthUser(); } catch (e) { }
-        router.push('/login');
+        router.push('/');
     };
 
     return (

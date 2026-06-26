@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function NotificationModal({ isOpen, onClose }) {
+export default function NotificationModal({ isOpen, onClose, onUnreadCountChange }) {
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
@@ -42,7 +42,11 @@ export default function NotificationModal({ isOpen, onClose }) {
                         n.id === notificationId ? { ...n, isRead: true } : n
                     )
                 );
-                setUnreadCount(Math.max(0, unreadCount - 1));
+                const newUnreadCount = Math.max(0, unreadCount - 1);
+                setUnreadCount(newUnreadCount);
+                if (onUnreadCountChange) {
+                    onUnreadCountChange(newUnreadCount);
+                }
             }
         } catch (error) {
             console.error('Error marking notification as read:', error);
@@ -61,6 +65,9 @@ export default function NotificationModal({ isOpen, onClose }) {
 
             setNotifications(notifications.map((n) => ({ ...n, isRead: true })));
             setUnreadCount(0);
+            if (onUnreadCountChange) {
+                onUnreadCountChange(0);
+            }
         } catch (error) {
             console.error('Error marking all notifications as read:', error);
         }

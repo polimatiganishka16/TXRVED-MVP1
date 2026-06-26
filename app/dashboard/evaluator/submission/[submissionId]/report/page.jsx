@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import DashboardHeader from '../../../../../../components/DashboardHeader';
 import EvaluatorReportDashboard from '../../../../../../components/EvaluatorReportDashboard';
+import RejectModal from '../../../../../../components/RejectModal';
+import ModifyReportModal from '../../../../../../components/ModifyReportModal';
 
 export default function EvaluatorReportPage() {
   const params = useParams();
@@ -12,13 +14,26 @@ export default function EvaluatorReportPage() {
 
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showRejectBox, setShowRejectBox] = useState(false);
+  const [showModifyBox, setShowModifyBox] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
 
-  const approveReport = async (action) => {
+  const handleReportAction = async (action, comment = '', confirmReject = false) => {
+    if (action === 'REJECT' && !confirmReject) {
+      setShowRejectBox(true);
+      return;
+    }
+
+    if (action === 'MODIFY') {
+      setShowModifyBox(true);
+      return;
+    }
+
     try {
       const res = await fetch('/api/reports/review', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reportId: report.id, action }),
+        body: JSON.stringify({ reportId: report.id, action, evaluatorComment: comment }),
       });
       const data = await res.json();
       if (data.success) {
@@ -30,6 +45,42 @@ export default function EvaluatorReportPage() {
     } catch (error) {
       console.error(error);
       alert('Action Failed');
+    }
+  };
+
+  const handleModifyReport = async (modifiedContent) => {
+    try {
+      // Create modified report by copying reportData and replacing editable fields
+      const modifiedReport = {
+        ...report.reportData,
+        capabilityTraits: modifiedContent.capabilityTraits,
+        strengths: modifiedContent.strengths,
+        improvements: modifiedContent.improvements,
+        recommendations: modifiedContent.recommendations,
+      };
+
+      const res = await fetch('/api/reports/review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reportId: report.id,
+          action: 'MODIFY',
+          evaluatorComment: report.evaluatorComment || '',
+          modifiedReport,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        alert('Report Modified Successfully');
+        setShowModifyBox(false);
+        router.push('/dashboard/evaluator');
+      } else {
+        alert(data.message || 'Modification Failed');
+      }
+    } catch (error) {
+      console.error('Modify error:', error);
+      alert('Failed to modify report');
     }
   };
 
@@ -79,7 +130,7 @@ export default function EvaluatorReportPage() {
           report={report} 
           submissionId={submissionId}
           showActions={true}
-          onAction={approveReport}
+          onAction={handleReportAction}
         />
 
         <button
@@ -88,6 +139,28 @@ export default function EvaluatorReportPage() {
         >
           ← Back to Submissions
         </button>
+
+        <RejectModal
+          show={showRejectBox}
+          reason={rejectReason}
+          onReasonChange={setRejectReason}
+          onCancel={() => {
+            setShowRejectBox(false);
+            setRejectReason('');
+          }}
+          onConfirm={() => {
+            handleReportAction('REJECT', rejectReason, true);
+            setShowRejectBox(false);
+            setRejectReason('');
+          }}
+        />
+
+        <ModifyReportModal
+          report={report}
+          isOpen={showModifyBox}
+          onClose={() => setShowModifyBox(false)}
+          onSave={handleModifyReport}
+        />
       </div>
     </div>
   );

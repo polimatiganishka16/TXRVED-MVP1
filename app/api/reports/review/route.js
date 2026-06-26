@@ -4,7 +4,7 @@ const resend = require('../../../../lib/resend');
 
 const prisma = new PrismaClient();
 
-async function sendApprovalEmailToCandidate(report) {
+async function sendReportEmailToCandidate(report, status) {
   const submissionId = Number(report?.submissionId);
   if (!submissionId) {
     throw new Error('Submission ID is missing');
@@ -33,27 +33,79 @@ async function sendApprovalEmailToCandidate(report) {
     throw new Error('Candidate email is missing');
   }
 
+  // Email content varies by status
+  const emailConfigs = {
+    APPROVE: {
+      subject: 'IECBP Evaluation Report Available',
+      heading: 'IECBP Evaluation Report Available',
+      intro: 'We are pleased to inform you that your submission for the IECBP Engineering Capability Evaluation has been successfully reviewed by the evaluation panel.',
+      context: 'Your evaluation report has now been published and is available for viewing within the IECBP Evaluation System.',
+      evaluationStatus: 'Approved',
+      reportStatus: 'Available',
+      reportIncludes: [
+        'Capability Assessment Results',
+        'Engineering Capability Traits',
+        'AI-Assisted Evaluation Insights',
+        'Performance Feedback &amp; Recommendations',
+      ],
+      callToAction: 'Please log in to the system to review your complete evaluation report.',
+    },
+    REJECT: {
+      subject: 'IECBP Evaluation Report Available',
+      heading: 'IECBP Evaluation Report Available',
+      intro: 'Your submission for the IECBP Engineering Capability Evaluation has been reviewed by the evaluation panel.',
+      context: 'The evaluation report is now available in the IECBP Evaluation System.',
+      evaluationStatus: 'Rejected',
+      reportStatus: 'Available',
+      reportIncludes: [
+        'Capability Assessment Results',
+        'AI Capability Traits',
+        'Improvement Areas',
+        'Recommendations',
+        'Evaluator Remarks',
+      ],
+      callToAction: 'Please log in to the system to review the complete evaluation report and the evaluator\'s feedback.',
+    },
+    MODIFY: {
+      subject: 'IECBP Evaluation Report Updated',
+      heading: 'IECBP Evaluation Report Updated',
+      intro: 'Your evaluation report has been reviewed and updated by the evaluation panel.',
+      context: 'The updated evaluation report is now available in the IECBP Evaluation System.',
+      evaluationStatus: 'Modified',
+      reportStatus: 'Updated',
+      reportIncludes: [
+        'Updated Capability Assessment Results',
+        'Updated AI Capability Traits',
+        'Updated Strengths',
+        'Updated Improvement Areas',
+        'Updated Recommendations',
+      ],
+      callToAction: 'Please log in to the system to review your updated evaluation report.',
+    },
+  };
+
+  const config = emailConfigs[status] || emailConfigs.APPROVE;
+
+  const reportIncludesHtml = config.reportIncludes.map(item => `<li>${item}</li>`).join('');
+
   const html = `
     <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #0f172a;">
-      <h2 style="color: #1d4ed8;">IECBP Evaluation Report Available</h2>
+      <h2 style="color: #1d4ed8;">${config.heading}</h2>
       <p>Dear ${candidateName},</p>
-      <p>We are pleased to inform you that your submission for the IECBP Engineering Capability Evaluation has been successfully reviewed by the evaluation panel.</p>
-      <p>Your evaluation report has now been published and is available for viewing within the IECBP Evaluation System.</p>
+      <p>${config.intro}</p>
+      <p>${config.context}</p>
       <p><strong>Assessment Details:</strong></p>
       <ul>
         <li><strong>Scenario:</strong> ${scenarioName}</li>
         <li><strong>Submission ID:</strong> ${submissionId}</li>
-        <li><strong>Evaluation Status:</strong> Approved</li>
-        <li><strong>Report Status:</strong> Available</li>
+        <li><strong>Evaluation Status:</strong> ${config.evaluationStatus}</li>
+        <li><strong>Report Status:</strong> ${config.reportStatus}</li>
       </ul>
-      <p>Your report includes:</p>
+      <p>The report includes:</p>
       <ul>
-        <li>Capability Assessment Results</li>
-        <li>Engineering Capability Traits</li>
-        <li>AI-Assisted Evaluation Insights</li>
-        <li>Performance Feedback &amp; Recommendations</li>
+        ${reportIncludesHtml}
       </ul>
-      <p>Please log in to the system to review your complete evaluation report.</p>
+      <p>${config.callToAction}</p>
       <p>Thank you for participating in the IECBP Evaluation Process.</p>
       <p>Best Regards,<br/>IECBP Evaluation System<br/>Engineering Capability Assessment Platform</p>
     </div>
@@ -62,11 +114,11 @@ async function sendApprovalEmailToCandidate(report) {
   await resend.emails.send({
     from: 'IECBP <onboarding@resend.dev>',
     to: candidateEmail,
-    subject: 'IECBP Evaluation Report Available',
+    subject: config.subject,
     html,
   });
 
-  return { sent: true, candidateEmail, candidateName, scenarioName, submissionId };
+  return { sent: true, candidateEmail, candidateName, scenarioName, submissionId, status };
 }
 
 export async function POST(request) {
@@ -123,10 +175,9 @@ export async function POST(request) {
     }
 
     if (normalized === 'MODIFY') {
-      if (!modifiedReport || typeof modifiedReport !== 'object') {
-        return new Response(JSON.stringify({ success: false, message: 'Modified report payload is required' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-      }
-      updateData.modifiedReport = modifiedReport;
+      updateData.modifiedReport = typeof modifiedReport === 'object' && modifiedReport !== null
+        ? modifiedReport
+        : report.reportData;
       updateData.evaluatorComment = evaluatorComment ?? report.evaluatorComment;
     }
 
@@ -134,7 +185,41 @@ export async function POST(request) {
       if (!evaluatorComment || evaluatorComment.trim().length === 0) {
         return new Response(JSON.stringify({ success: false, message: 'Rejection reason is required' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
       }
-      updateData.evaluatorComment = evaluatorComment;
+      
+      // Generate rejection-specific insights
+      try {
+        console.log('GENERATING REJECTED REPORT INSIGHTS FOR SUBMISSION:', report.submissionId);
+        const { generateRejectedReportInsights } = await import('../../../services/rejectedReportService.js');
+        const rejectedInsights = await generateRejectedReportInsights(Number(report.submissionId));
+        
+        updateData.evaluatorComment = evaluatorComment;
+        updateData.reportData = {
+          ...report.reportData,
+          capabilityTraits: report.reportData.capabilityTraits || [],
+          strengths: rejectedInsights.strengths,
+          improvements: rejectedInsights.improvements,
+          recommendations: rejectedInsights.recommendations,
+        };
+        
+        console.log('REJECTED REPORT INSIGHTS APPLIED:', {
+          submissionId: report.submissionId,
+          capabilityTraits: (report.reportData.capabilityTraits || []).length,
+          strengths: rejectedInsights.strengths.length,
+          improvements: rejectedInsights.improvements.length,
+          recommendations: rejectedInsights.recommendations.length,
+        });
+      } catch (insightError) {
+        console.error('FAILED TO GENERATE REJECTED INSIGHTS:', {
+          submissionId: report.submissionId,
+          message: insightError.message,
+        });
+        // Fallback: keep original report but with updated insights, preserve capability traits
+        updateData.evaluatorComment = evaluatorComment;
+        updateData.reportData = {
+          ...report.reportData,
+          capabilityTraits: report.reportData.capabilityTraits || [],
+        };
+      }
     }
 
     const updated = await prisma.evaluationReport.update({ where: { id: Number(reportId) }, data: updateData });
@@ -144,10 +229,38 @@ export async function POST(request) {
     if (normalized === 'APPROVE') {
       try {
         console.log('CANDIDATE EMAIL STARTED', { reportId: updated.id, submissionId: updated.submissionId });
-        const emailResult = await sendApprovalEmailToCandidate(updated);
+        const emailResult = await sendReportEmailToCandidate(updated, 'APPROVE');
         console.log('CANDIDATE EMAIL SENT', emailResult);
       } catch (emailError) {
         console.error('CANDIDATE EMAIL FAILED', {
+          reportId: updated.id,
+          submissionId: updated.submissionId,
+          message: emailError.message,
+        });
+      }
+    }
+
+    if (normalized === 'REJECT') {
+      try {
+        console.log('CANDIDATE EMAIL STARTED FOR REJECTION', { reportId: updated.id, submissionId: updated.submissionId });
+        const emailResult = await sendReportEmailToCandidate(updated, 'REJECT');
+        console.log('CANDIDATE EMAIL SENT FOR REJECTION', emailResult);
+      } catch (emailError) {
+        console.error('CANDIDATE EMAIL FAILED FOR REJECTION', {
+          reportId: updated.id,
+          submissionId: updated.submissionId,
+          message: emailError.message,
+        });
+      }
+    }
+
+    if (normalized === 'MODIFY') {
+      try {
+        console.log('CANDIDATE EMAIL STARTED FOR MODIFICATION', { reportId: updated.id, submissionId: updated.submissionId });
+        const emailResult = await sendReportEmailToCandidate(updated, 'MODIFY');
+        console.log('CANDIDATE EMAIL SENT FOR MODIFICATION', emailResult);
+      } catch (emailError) {
+        console.error('CANDIDATE EMAIL FAILED FOR MODIFICATION', {
           reportId: updated.id,
           submissionId: updated.submissionId,
           message: emailError.message,

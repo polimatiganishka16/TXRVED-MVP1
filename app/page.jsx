@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { fetchSession } from '../components/auth/auth';
 import { motion } from 'framer-motion';
+import { Info } from "lucide-react";
 
 export default function Home() {
     const router = useRouter();
@@ -314,13 +315,35 @@ export default function Home() {
                 </motion.div>
 
                 {/* Footer */}
-                <motion.p variants={itemVariants} style={{
-                    marginTop: '3rem',
-                    fontSize: '12px',
-                    color: '#6B7280',
-                }}>
-                    © 2026 IECBP Evaluation System. All rights reserved.
-                </motion.p>
+               <motion.p
+  variants={itemVariants}
+  style={{
+    marginTop: '3rem',
+    fontSize: '12px',
+    color: '#6B7280',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: '8px',
+    flexWrap: 'wrap',
+  }}
+>
+  <span>© 2026 IECBP Evaluation System. All rights reserved.</span>
+
+  <a
+    href="/about"
+    style={{
+      color: '#6B7280',
+      textDecoration: 'none',
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '4px',
+    }}
+  >
+    <Info size={13} />
+    About Us
+  </a>
+</motion.p>
             </motion.div>
         </div>
     );

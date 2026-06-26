@@ -14,7 +14,9 @@ export default function EvaluatorReportDashboard({ report, submissionId, showAct
     );
   }
 
-  const data = report.reportData;
+  // Use modifiedReport if status is MODIFIED, otherwise use original reportData
+  const statusKey = (report.status || 'PENDING').toUpperCase();
+  const data = statusKey === 'MODIFY' && report.modifiedReport ? report.modifiedReport : report.reportData;
   const candidateInfo = data.candidateInfo || {};
   const indices = data.capabilityIndices || {};
   const evaluationScores = data.evaluationScores || {};

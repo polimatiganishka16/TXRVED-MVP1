@@ -13,7 +13,7 @@ export default function LogoutButton({ className, children }) {
             // ignore errors; still clear client state
         }
         try { clearAuthUser(); } catch (e) { }
-        router.push('/login');
+        router.push('/');
     };
 
     return (

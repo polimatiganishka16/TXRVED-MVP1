@@ -1,7 +1,7 @@
 import AdminSidebar from '../../../components/admin/AdminSidebar';
 import AdminHeader from '../../../components/admin/AdminHeader';
 export const metadata = {
-  title: 'Admin — IECBP Evaluation System',
+  title: 'Admin — IECBP Evaluation System | txrV.ed',
 };
 
 export default function AdminLayout({ children }) {

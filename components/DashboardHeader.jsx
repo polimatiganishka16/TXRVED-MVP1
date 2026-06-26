@@ -97,6 +97,7 @@ export default function DashboardHeader() {
                     <ProfileMenu />
                 </div>
             </header>
+            <NotificationModal isOpen={isNotificationOpen} onClose={() => setIsNotificationOpen(false)} onUnreadCountChange={setUnreadCount} />
 
             <NotificationModal isOpen={isNotificationOpen} onClose={() => setIsNotificationOpen(false)} />
         </>

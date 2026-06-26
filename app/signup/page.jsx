@@ -55,6 +55,9 @@ export default function SignupPage() {
             background: 'linear-gradient(135deg, #0f1623 0%, #121826 40%, #182235 70%, #1a2540 100%)',
             padding: '3rem'
         }}>
+            <div style={{ position: 'absolute', top: '2rem', left: '2rem' }}>
+                <button onClick={() => router.push('/')} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(15,23,42,0.8)', color: '#E2E8F0', fontWeight: 500, fontSize: '14px', cursor: 'pointer' }}>← Back to Home</button>
+            </div>
             {!showSuccess ? (
                 <form onSubmit={handleSubmit} style={{ width: '420px', background: 'linear-gradient(145deg,#0f172a,#111827)', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.06)' }}>
                     <h2 style={{ fontFamily: "'Playfair Display', serif", color: '#F8FAFC', fontSize: '1.5rem', marginBottom: '0.5rem' }}>Create account</h2>

@@ -9,9 +9,9 @@ export default function ReportViewer({ report, submissionId, scenario, showActio
     );
   }
 
-  const data = report.reportData;
-
+  // Use modifiedReport if status is MODIFIED, otherwise use original reportData
   const statusKey = (report.status || 'PENDING').toUpperCase();
+  const data = statusKey === 'MODIFY' && report.modifiedReport ? report.modifiedReport : report.reportData;
   const statusConfig = {
     APPROVE: { label: 'Approved', icon: '🟢', accent: '#10B981', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.25)' },
     MODIFY: { label: 'Modified', icon: '🔵', accent: '#3B82F6', background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.25)' },
@@ -20,6 +20,16 @@ export default function ReportViewer({ report, submissionId, scenario, showActio
   };
   const statusEntry = statusConfig[statusKey] || statusConfig.PENDING;
   const reviewedAtLabel = report.reviewedAt ? new Date(report.reviewedAt).toLocaleString() : null;
+
+  const statusMessage = statusKey === 'REJECT'
+    ? {
+        title: 'Report Requires Improvement',
+        description: "Your submission has been reviewed by the evaluator. While it does not meet the required evaluation criteria at this time, the evaluator's remarks and AI insights below highlight the key areas for improvement to help you continue developing your engineering capabilities.",
+      }
+    : {
+        title: 'Good work!',
+        description: 'Congratulations! 🎉 Your submission has been reviewed and approved. Your responses demonstrated strong understanding and decision-making capabilities. Keep up the good work and continue building on your strengths.',
+      };
 
   const extractText = (item) => {
     if (!item) return '';
@@ -70,8 +80,7 @@ export default function ReportViewer({ report, submissionId, scenario, showActio
               <span style={{ fontSize: '2rem', fontWeight: 800, color: '#F8FAFC' }}>{statusEntry.label}</span>
               <span style={{ display: 'inline-flex', alignItems: 'center', padding: '0.55rem 0.9rem', borderRadius: '999px', background: 'rgba(255,255,255,0.06)', color: '#E2E8F0', border: '1px solid rgba(255,255,255,0.08)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{statusKey}</span>
             </div>
-            <p style={{ margin: '1rem 0 0', color: '#94A3B8', maxWidth: '720px', lineHeight: 1.75 }}>Congratulations! 🎉
-Your submission has been reviewed and approved. Your responses demonstrated strong understanding and decision-making capabilities. Keep up the good work and continue building on your strengths.</p>
+            <p style={{ margin: '1rem 0 0', color: '#94A3B8', maxWidth: '720px', lineHeight: 1.75 }}>{statusMessage.description}</p>
           </div>
         </div>
       </div>

@@ -159,6 +159,12 @@ export async function GET(req) {
       recommendations: []
     };
 
+    // FETCH: Report status for this submission
+    const report = await prisma.evaluationReport.findFirst({
+      where: { submissionId },
+      orderBy: { id: 'desc' }
+    });
+
     return Response.json({
       success: true,
       submission: {
@@ -167,7 +173,7 @@ export async function GET(req) {
         scenarioId: submission.scenarioId,
         scenario: `Scenario ${submission.scenarioId}`,
         date: normalizeSubmittedAt(submission.submittedAt),
-        status: 'pending',
+        status: report?.status || 'PENDING',
         questions,
         ai: evaluation ? {
           understanding: evaluation.understanding,
