@@ -1,9 +1,9 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { fetchSession } from '../../components/auth/auth';
 
-export default function ProfilePage() {
+function ProfilePageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [user, setUser] = useState(null);
@@ -194,5 +194,22 @@ export default function ProfilePage() {
                 </div>
             )}
         </div>
+    );
+}
+
+const ProfilePageFallback = (
+    <div style={{
+        minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'linear-gradient(135deg, #0f1623 0%, #121826 40%, #182235 70%, #1a2540 100%)',
+    }}>
+        <div style={{ color: '#94A3B8' }}>Loading...</div>
+    </div>
+);
+
+export default function ProfilePage() {
+    return (
+        <Suspense fallback={ProfilePageFallback}>
+            <ProfilePageContent />
+        </Suspense>
     );
 }

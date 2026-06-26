@@ -4,17 +4,13 @@ const prisma = new PrismaClient();
 
 export async function GET(req, { params }) {
     try {
-        // Try to obtain id from params (may be a Promise) or from the request pathname
-        const pathname = req.nextUrl?.pathname || new URL(req.url, 'http://localhost').pathname;
-        const pathParts = pathname.split('/').filter(Boolean);
-        const lastSegment = pathParts.at(-1);
-
-        const maybeParam = params?.id ?? lastSegment;
-        const rawId = maybeParam && typeof maybeParam.then === 'function' ? await maybeParam : maybeParam;
-        const userId = rawId;
+        const { id: userId } = await params;
 
         if (!userId) {
-            return new Response(JSON.stringify({ message: 'User ID is required' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+            return new Response(
+                JSON.stringify({ message: "User ID is required" }),
+                { status: 400 }
+            );
         }
 
         const candidate = await prisma.candidate.findUnique({

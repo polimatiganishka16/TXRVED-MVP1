@@ -1,8 +1,8 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function ResetPasswordPage() {
+function ResetPasswordPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [token, setToken] = useState('');
@@ -160,5 +160,22 @@ export default function ResetPasswordPage() {
                 <button type="submit" disabled={loading} style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'linear-gradient(135deg,#6366F1,#7C3AED)', color: '#fff', fontWeight: 700 }}>{loading ? 'Resetting...' : 'Reset Password'}</button>
             </form>
         </div>
+    );
+}
+
+const ResetPasswordPageFallback = (
+    <div style={{
+        minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'linear-gradient(135deg, #0f1623 0%, #121826 40%, #182235 70%, #1a2540 100%)',
+    }}>
+        <div style={{ color: '#94A3B8' }}>Loading...</div>
+    </div>
+);
+
+export default function ResetPasswordPage() {
+    return (
+        <Suspense fallback={ResetPasswordPageFallback}>
+            <ResetPasswordPageContent />
+        </Suspense>
     );
 }
