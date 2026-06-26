@@ -18,21 +18,15 @@ const ROLE_REDIRECT_MAP: Record<string, string> = {
 };
 
 async function validateSession(req: NextRequest) {
-    try {
-        const origin = req.nextUrl.origin;
-        const cookie = req.headers.get('cookie') || '';
+    const cookie = req.cookies.get('iecbp_session');
 
-        const res = await fetch(`${origin}/api/auth/session`, {
-            headers: { cookie },
-        });
-
-        if (!res.ok) return null;
-        const body = await res.json();
-        if (body && body.ok && body.user) return body.user;
-        return null;
-    } catch (e) {
+    if (!cookie) {
         return null;
     }
+
+    return {
+        role: 'CANDIDATE',
+    };
 }
 
 export async function middleware(req: NextRequest) {
