@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { jwtVerify } from 'jose';
 
 /**
  * Middleware: protects selected routes by validating the server session
@@ -17,6 +18,8 @@ const ROLE_REDIRECT_MAP: Record<string, string> = {
     CANDIDATE: '/dashboard/candidate',
 };
 
+const SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'dev_secret_change_me';
+
 async function validateSession(req: NextRequest) {
     const cookie = req.cookies.get('iecbp_session');
 
@@ -24,9 +27,28 @@ async function validateSession(req: NextRequest) {
         return null;
     }
 
-    return {
-        role: 'CANDIDATE'
-    };
+    try {
+        const { payload } = await jwtVerify(
+            cookie.value,
+            new TextEncoder().encode(SECRET),
+            {
+                algorithms: ['HS256'],
+            }
+        ); const { id, email, name, role } = payload as Record<string, unknown>;
+
+        if (!role || typeof role !== 'string') {
+            return null;
+        }
+
+        return {
+            id: typeof id === 'string' || typeof id === 'number' ? id : undefined,
+            email: typeof email === 'string' ? email : undefined,
+            name: typeof name === 'string' ? name : undefined,
+            role,
+        };
+    } catch (error) {
+        return null;
+    }
 }
 
 export async function middleware(req: NextRequest) {
