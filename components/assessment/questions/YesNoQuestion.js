@@ -2,9 +2,11 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAssessmentInputProtection } from './useAssessmentInputProtection';
 
 export default function YesNoQuestion({ question, value, onChange, readOnly = false }) {
   const [focused, setFocused] = useState(false);
+  const { handleRestriction, handleKeyDown, toast } = useAssessmentInputProtection(readOnly);
 
   const selected = value?.choice || null;
   const reasoning = value?.reasoning || '';
@@ -28,7 +30,7 @@ export default function YesNoQuestion({ question, value, onChange, readOnly = fa
       transition={{ duration: 0.4 }}
     >
       {/* YES / NO cards */}
-      <div style={{ display: 'flex',  gap: '1.25rem', marginBottom: '1.75rem' }}>
+      <div style={{ display: 'flex', gap: '1.25rem', marginBottom: '1.75rem' }}>
         {[
           {
             key: 'yes',
@@ -189,6 +191,11 @@ export default function YesNoQuestion({ question, value, onChange, readOnly = fa
                   disabled={readOnly}
                   onFocus={() => setFocused(true)}
                   onBlur={() => setFocused(false)}
+                  onPaste={handleRestriction}
+                  onCopy={handleRestriction}
+                  onCut={handleRestriction}
+                  onContextMenu={handleRestriction}
+                  onKeyDown={handleKeyDown}
                   placeholder={question.reasoningPlaceholder || 'Explain your reasoning in detail…'}
                   rows={5}
                   style={{
@@ -241,6 +248,7 @@ export default function YesNoQuestion({ question, value, onChange, readOnly = fa
         )}
       </AnimatePresence>
 
+      {toast}
       {/* overall status */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '7px', paddingLeft: '0.25rem' }}>
         <motion.div

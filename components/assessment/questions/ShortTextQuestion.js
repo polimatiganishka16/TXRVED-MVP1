@@ -2,10 +2,12 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useAssessmentInputProtection } from './useAssessmentInputProtection';
 
 export default function ShortTextQuestion({ question, value, onChange, readOnly = false }) {
   const [focused, setFocused] = useState(false);
   const [validationMessage, setValidationMessage] = useState('');
+  const { handleRestriction, handleKeyDown, toast } = useAssessmentInputProtection(readOnly);
   const wordCount = value ? value.trim().split(/\s+/).filter(Boolean).length : 0;
   const hasContent = value && value.trim().length > 0;
 
@@ -39,6 +41,11 @@ export default function ShortTextQuestion({ question, value, onChange, readOnly 
           disabled={readOnly}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
+          onPaste={handleRestriction}
+          onCopy={handleRestriction}
+          onCut={handleRestriction}
+          onContextMenu={handleRestriction}
+          onKeyDown={handleKeyDown}
           placeholder={question.placeholder}
           rows={7}
           style={{
@@ -124,6 +131,7 @@ export default function ShortTextQuestion({ question, value, onChange, readOnly 
           </span>
         </div>
       </div>
+      {toast}
       {validationMessage && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
