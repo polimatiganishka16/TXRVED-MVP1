@@ -76,7 +76,7 @@ model EvaluationResult {
   evaluator          User?    @relation(fields: [evaluatorId], references: [id])
 }
 
-model Candidate {
+model Candidate { 
   id             Int           @id @default(autoincrement())
   candidate_code String        @unique
   name           String
