@@ -70,7 +70,7 @@ export async function auditEvidenceGaps(submissionId) {
 
         let response;
         let lastError;
-        const models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"];
+        const models = ["openai/gpt-oss-120b", "llama-3.1-8b-instant"];
         const maxAttemptsPerModel = 3;
 
         for (let modelIndex = 0; modelIndex < models.length; modelIndex++) {

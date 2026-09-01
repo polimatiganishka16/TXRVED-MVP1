@@ -172,7 +172,7 @@ export async function generateCapabilityInsights(submissionId) {
 }
 
 async function generateWithRetry(prompt) {
-    const models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"];
+    const models = ["openai/gpt-oss-120b", "llama-3.1-8b-instant"];
     const maxAttemptsPerModel = 3;
     let lastError;
 

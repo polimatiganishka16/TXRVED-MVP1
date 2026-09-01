@@ -98,8 +98,8 @@ export default function QuestionScoresPage() {
                   <div key={question.id} style={{ background: 'rgba(15,23,42,0.95)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '18px', padding: '1.5rem', display: 'grid', gap: '0.75rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
                       <div>
-                        <div style={{ color: '#94A3B8', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.5rem' }}>Question {question.questionId}</div>
-                        <div style={{ color: '#F8FAFC', fontSize: '1.25rem', fontWeight: 700 }}>{question.questionText || `Question ${question.questionId}`}</div>
+                        <div style={{ color: '#94A3B8', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.5rem' }}>Question {question.questionNumber ?? question.questionId}</div>
+                        <div style={{ color: '#F8FAFC', fontSize: '1.25rem', fontWeight: 700 }}>{question.questionText || `Question ${question.questionNumber ?? question.questionId}`}</div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         <div style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '14px 18px', color: '#F8FAFC', fontWeight: 700 }}>{Math.round((question.score || 0) * 2) / 2}/5</div>

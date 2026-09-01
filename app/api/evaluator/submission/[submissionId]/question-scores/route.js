@@ -12,6 +12,11 @@ export async function GET(req) {
       return Response.json({ success: false, message: 'Invalid submission ID' }, { status: 400 });
     }
 
+    const submission = await prisma.submission.findUnique({
+      where: { id: submissionId },
+      select: { scenarioId: true },
+    });
+
     const questionScores = await prisma.questionScore.findMany({
       where: { submissionId },
       orderBy: { questionId: 'asc' }
@@ -19,10 +24,14 @@ export async function GET(req) {
 
     const questionIds = questionScores.map((score) => score.questionId);
     const questions = await prisma.question.findMany({
-      where: { id: { in: questionIds } }
+      where: {
+        scenarioId: submission?.scenarioId,
+        id: { in: questionIds },
+      },
+      orderBy: { orderNo: 'asc' },
     });
 
-    const questionsById = new Map(questions.map((q) => [q.id, q.questionText]));
+    const questionsById = new Map(questions.map((q) => [q.id, q]));
 
     // FETCH: AI Missed Evidence from AIEvidenceAudit
     const aiAudit = await prisma.aIEvidenceAudit.findFirst({
@@ -38,22 +47,27 @@ export async function GET(req) {
       console.log('AI MISSED EVIDENCE COUNT:', allAiMissedEvidence.length);
     }
 
-    const questionScoresWithText = questionScores.map((score) => {
-      // Match AI missed evidence to this question by questionId
-      const questionAiMissedEvidence = allAiMissedEvidence.filter(
-        item => Number(item.questionId) === Number(score.questionId)
-      );
+    const questionScoresWithText = questionScores
+      .map((score) => {
+        const questionRecord = questionsById.get(score.questionId);
+        const questionNumber = questionRecord?.orderNo ?? Number(score.questionId);
 
-      if (questionAiMissedEvidence.length > 0) {
-        console.log('QUESTION AI EVIDENCE ATTACHED');
-      }
+        const questionAiMissedEvidence = allAiMissedEvidence.filter(
+          item => Number(item.questionId) === Number(score.questionId)
+        );
 
-      return {
-        ...score,
-        questionText: questionsById.get(score.questionId) || `Question ${score.questionId}`,
-        aiMissedEvidence: questionAiMissedEvidence
-      };
-    });
+        if (questionAiMissedEvidence.length > 0) {
+          console.log('QUESTION AI EVIDENCE ATTACHED');
+        }
+
+        return {
+          ...score,
+          questionNumber,
+          questionText: questionRecord?.questionText || `Question ${questionNumber}`,
+          aiMissedEvidence: questionAiMissedEvidence
+        };
+      })
+      .sort((a, b) => Number(a.questionNumber) - Number(b.questionNumber));
 
     return Response.json({ success: true, questionScores: questionScoresWithText });
   } catch (error) {

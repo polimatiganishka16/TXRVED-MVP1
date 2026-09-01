@@ -2,15 +2,6 @@ const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 
-const questionBanks = {
-  1: require('../../../../../data/scenario1Questions').scenario1Questions,
-  2: require('../../../../../data/scenario2Questions').scenario2Questions,
-  3: require('../../../../../data/scenario3Questions').scenario3Questions,
-  4: require('../../../../../data/scenario4Questions').scenario4Questions,
-  5: require('../../../../../data/scenario5Questions').scenario5Questions,
-  6: require('../../../../../data/scenario6Questions').scenario6Questions,
-};
-
 function parseAnswer(raw) {
   try {
     const parsed = JSON.parse(raw);
@@ -104,16 +95,29 @@ export async function GET(req) {
       }
     }
 
-    const questionBank = questionBanks[submission.scenarioId] || [];
-    const questions = answers.map(answer => {
-      const bankQuestion = questionBank.find(q => Number(q.id) === Number(answer.questionId));
-      return {
-        id: answer.questionId,
-        question: bankQuestion?.question || `Question ${answer.questionId}`,
-        answer: parseAnswer(answer.answer),
-        type: bankQuestion?.type || 'text',
-      };
+    const scenarioQuestions = await prisma.question.findMany({
+      where: { scenarioId: submission.scenarioId },
+      orderBy: { orderNo: 'asc' },
     });
+
+    const questionByDbId = new Map(
+      scenarioQuestions.map((question) => [Number(question.id), question])
+    );
+
+    const questions = answers
+      .map((answer) => {
+        const question = questionByDbId.get(Number(answer.questionId));
+        const questionNumber = question?.orderNo ?? Number(answer.questionId);
+
+        return {
+          id: answer.questionId,
+          questionNumber,
+          question: question?.questionText || `Question ${questionNumber}`,
+          answer: parseAnswer(answer.answer),
+          type: question?.questionType || 'text',
+        };
+      })
+      .sort((a, b) => Number(a.questionNumber) - Number(b.questionNumber));
 
     // FETCH: AI Missed Evidence from AIEvidenceAudit
     const aiAudit = await prisma.aIEvidenceAudit.findFirst({

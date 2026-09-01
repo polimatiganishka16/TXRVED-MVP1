@@ -35,6 +35,24 @@ export async function POST(req) {
 
     const attemptId = submission?.attemptId ?? null;
 
+    const scenarioQuestions = await prisma.question.findMany({
+      where: { scenarioId: Number(submission?.scenarioId ?? scenarioId) },
+      select: {
+        id: true,
+        orderNo: true,
+        questionText: true,
+        questionType: true,
+      },
+      orderBy: { orderNo: 'asc' },
+    });
+
+    const questionIdToOrderNo = new Map(
+      scenarioQuestions.map((question) => [Number(question.id), Number(question.orderNo)])
+    );
+    const orderNoToQuestionId = new Map(
+      scenarioQuestions.map((question) => [Number(question.orderNo), Number(question.id)])
+    );
+
     console.log("DB ANSWERS:", dbAnswers);
 
     const { extractEvidence } = await import('../../../services/evidenceService.js');
@@ -79,11 +97,16 @@ export async function POST(req) {
     console.log("EVIDENCE COUNTS:", evidenceSummary);
     console.log("FINAL INDICES:", scores);
 
-    // STEP 2 — format answers for engine
-    const formattedAnswers = dbAnswers.map((a) => ({
-      questionId: `q${a.questionId}`,
-      answer: a.answer
-    }));
+    // STEP 2 — format answers for engine using scenario-local orderNo while preserving DB question IDs
+    const formattedAnswers = dbAnswers.map((a) => {
+      const dbQuestionId = Number(a.questionId);
+      const questionOrderNo = questionIdToOrderNo.get(dbQuestionId) ?? Number(String(a.questionId).replace(/^q/i, ''));
+
+      return {
+        questionId: `q${questionOrderNo}`,
+        answer: a.answer,
+      };
+    });
     console.log("FORMATTED:", formattedAnswers);
 
     // STEP 3 — run evaluation engine
@@ -115,9 +138,9 @@ export async function POST(req) {
       });
 
     const questionScoreData = result.evaluatedQuestions.map((question) => {
-      const questionNum = Number(String(question.questionId).replace(/^q/, ''));
-      const answerForQuestion = dbAnswers.find((a) => a.questionId === questionNum);
-      const questionEvidence = evidenceByQuestionId.get(questionNum) || [];
+      const questionOrderNo = Number(String(question.questionId).replace(/^q/i, ''));
+      const dbQuestionId = orderNoToQuestionId.get(questionOrderNo) ?? questionOrderNo;
+      const questionEvidence = evidenceByQuestionId.get(dbQuestionId) || evidenceByQuestionId.get(questionOrderNo) || [];
       const answerText = typeof question.rawAnswer === 'string'
         ? question.rawAnswer
         : JSON.stringify(question.rawAnswer);
@@ -129,7 +152,7 @@ export async function POST(req) {
       return {
         submissionId: Number(submissionId),
         attemptId,
-        questionId: questionNum,
+        questionId: dbQuestionId,
         score: question.score,
         understandingEvidence: questionEvidence.filter((item) => item.type === 'CAUSE' || item.type === 'STAKEHOLDER'),
         awarenessEvidence: questionEvidence.filter((item) => item.type === 'RISK' || item.type === 'STAKEHOLDER'),
