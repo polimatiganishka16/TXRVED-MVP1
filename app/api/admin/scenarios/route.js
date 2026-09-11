@@ -1,24 +1,43 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
+import { getOrSetCache } from "../../../../lib/cache";
 
 export async function GET() {
   try {
-    const scenarios = await prisma.scenario.findMany({
-      include: {
-        questions: {
-          include: {
-            options: {
-  orderBy: {
-    id: "asc",
-  },
-},
+    const scenarios = await getOrSetCache("scenarios:active", async () => {
+      return prisma.scenario.findMany({
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          category: true,
+          icon: true,
+          level: true,
+          levelColor: true,
+          createdAt: true,
+          questions: {
+            orderBy: { orderNo: "asc" },
+            select: {
+              id: true,
+              questionText: true,
+              questionType: true,
+              orderNo: true,
+              options: {
+                orderBy: { id: "asc" },
+                select: {
+                  id: true,
+                  optionText: true,
+                  imageUrl: true,
+                },
+              },
+            },
           },
         },
-      },
-      orderBy: {
-        createdAt: "asc",
-      },
-    });
+        orderBy: {
+          createdAt: "asc",
+        },
+      });
+    }, 60 * 60);
 
     return NextResponse.json(scenarios);
   } catch (error) {

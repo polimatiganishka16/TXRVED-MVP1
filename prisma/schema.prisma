@@ -8,34 +8,38 @@ datasource db {
 }
 
 model User {
-  id                        Int                @id @default(autoincrement())
-  name                      String?
-  email                     String             @unique
-  password                  String
-  role                      Role               @default(CANDIDATE)
-  createdAt                 DateTime           @default(now())
-  updatedAt                 DateTime@updatedAt
-  isVerified                Boolean            @default(false)
-  verificationToken         String?
-  verificationTokenExpiry   DateTime?
-  resetToken                String?
-  resetTokenExpiry          DateTime?
-  candidate                 Candidate?
-  evaluationResults         EvaluationResult[]
-  examAttempts              ExamAttempt[]
-  notifications             Notification[]
+  id                      Int                @id @default(autoincrement())
+  name                    String?
+  email                   String             @unique
+  password                String
+  role                    Role               @default(CANDIDATE)
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
+  isVerified              Boolean            @default(false)
+  verificationToken       String?
+  verificationTokenExpiry DateTime?
+  resetToken              String?
+  resetTokenExpiry        DateTime?
+  candidate               Candidate?
+  evaluationResults       EvaluationResult[]
+  examAttempts            ExamAttempt[]
+  notifications           Notification[]
 }
 
 model Submission {
-  id          Int          @id @default(autoincrement())
-  scenarioId  Int
-  submittedAt String
-  candidateId Int?
-  attemptId   Int?
-  answers     Answer[]
+  id             Int             @id @default(autoincrement())
+  scenarioId     Int
+  submittedAt    String
+  candidateId    Int?
+  attemptId      Int?
+  answers        Answer[]
   questionScores QuestionScore[]
-  attempt     ExamAttempt? @relation(fields: [attemptId], references: [id])
-  candidate   Candidate?   @relation(fields: [candidateId], references: [id])
+  attempt        ExamAttempt?    @relation(fields: [attemptId], references: [id])
+  candidate      Candidate?      @relation(fields: [candidateId], references: [id])
+
+  @@index([scenarioId])
+  @@index([candidateId, scenarioId])
+  @@index([attemptId])
 }
 
 model Answer {
@@ -47,15 +51,15 @@ model Answer {
 }
 
 model ExamAttempt {
-  id               Int          @id @default(autoincrement())
-  start_time       DateTime     @default(now())
+  id               Int             @id @default(autoincrement())
+  start_time       DateTime        @default(now())
   submit_time      DateTime?
   duration_minutes Float?
-  status           String       @default("started")
+  status           String          @default("started")
   userId           Int?
   candidateId      Int?
-  candidate        Candidate?   @relation(fields: [candidateId], references: [id])
-  user             User?        @relation(fields: [userId], references: [id])
+  candidate        Candidate?      @relation(fields: [candidateId], references: [id])
+  user             User?           @relation(fields: [userId], references: [id])
   submissions      Submission[]
   questionScores   QuestionScore[]
 }
@@ -76,7 +80,7 @@ model EvaluationResult {
   evaluator          User?    @relation(fields: [evaluatorId], references: [id])
 }
 
-model Candidate { 
+model Candidate {
   id             Int           @id @default(autoincrement())
   candidate_code String        @unique
   name           String
@@ -91,39 +95,40 @@ enum Role {
   EVALUATOR
   CANDIDATE
 }
+
 model Scenario {
-  id          Int        @id @default(autoincrement())
+  id          Int    @id @default(autoincrement())
   title       String
   description String
   category    String
 
-  icon        String?
-  level       String?
-  levelColor  String?
+  icon       String?
+  level      String?
+  levelColor String?
 
-  questions   Question[]
+  questions Question[]
 
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Question {
-  id           Int       @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-  scenarioId   Int
-  scenario     Scenario  @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  scenarioId Int
+  scenario   Scenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
 
   questionText String
   questionType String
   orderNo      Int
 
-  options      Option[]
+  options Option[]
 
-  createdAt    DateTime  @default(now())
+  createdAt DateTime @default(now())
 }
 
 model Option {
-  id         Int      @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
   questionId Int
   question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
@@ -131,86 +136,96 @@ model Option {
   optionText String?
   imageUrl   String?
 
-  createdAt  DateTime @default(now())
+  createdAt DateTime @default(now())
 }
 
 model Notification {
-  id        Int     @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   userId    Int
   title     String
   message   String
-  isRead    Boolean @default(false)
+  isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
 
-  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-model Evaluation {
- id Int @id @default(autoincrement())
- responseId Int
- understanding Int
- clarity Int
- awareness Int
- decision Int
- actionability Int
- capabilityIndex Float
- confidenceIndex Float
- coverageIndex Float
- createdAt DateTime @default(now())
-}
-model QuestionScore {
- id Int @id @default(autoincrement())
- submissionId Int
- attemptId Int?
- questionId Int
- score Float
- understandingEvidence Json?
- awarenessEvidence Json?
- decisionEvidence Json?
- actionabilityEvidence Json?
- clarityEvidence Json?
- createdAt DateTime @default(now())
- submission Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
- attempt ExamAttempt? @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
- @@map("question_score")
+  @@index([userId, createdAt])
 }
+
+model Evaluation {
+  id              Int      @id @default(autoincrement())
+  responseId      Int
+  understanding   Int
+  clarity         Int
+  awareness       Int
+  decision        Int
+  actionability   Int
+  capabilityIndex Float
+  confidenceIndex Float
+  coverageIndex   Float
+  createdAt       DateTime @default(now())
+}
+
+model QuestionScore {
+  id                    Int          @id @default(autoincrement())
+  submissionId          Int
+  attemptId             Int?
+  questionId            Int
+  score                 Float
+  understandingEvidence Json?
+  awarenessEvidence     Json?
+  decisionEvidence      Json?
+  actionabilityEvidence Json?
+  clarityEvidence       Json?
+  createdAt             DateTime     @default(now())
+  submission            Submission   @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  attempt               ExamAttempt? @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@map("question_score")
+}
+
 model Evidence {
- id Int @id @default(autoincrement())
- responseId Int
- type String
- keyword String
- sentence String
+  id         Int    @id @default(autoincrement())
+  responseId Int
+  type       String
+  keyword    String
+  sentence   String
 }
+
 model AIEvidenceAudit {
- id Int @id @default(autoincrement())
- submissionId Int
- audit Json
- createdAt DateTime @default(now())
+  id           Int      @id @default(autoincrement())
+  submissionId Int
+  audit        Json
+  createdAt    DateTime @default(now())
 }
+
 model CapabilityTrait {
- id Int @id @default(autoincrement())
- submissionId Int
- traitName String
- confidence Float
- evidence Json
- createdAt DateTime @default(now())
+  id           Int      @id @default(autoincrement())
+  submissionId Int
+  traitName    String
+  confidence   Float
+  evidence     Json
+  createdAt    DateTime @default(now())
 }
+
 model CapabilityInsight {
- id Int @id @default(autoincrement())
- submissionId Int
- strengths Json
- improvements Json
- recommendations Json
- createdAt DateTime @default(now())
+  id              Int      @id @default(autoincrement())
+  submissionId    Int
+  strengths       Json
+  improvements    Json
+  recommendations Json
+  createdAt       DateTime @default(now())
 }
+
 model AIInsight {
- id Int @id @default(autoincrement())
- submissionId Int
- strengths Json
- improvements Json
- recommendations Json
- createdAt DateTime @default(now())
+  id              Int      @id @default(autoincrement())
+  submissionId    Int
+  strengths       Json
+  improvements    Json
+  recommendations Json
+  createdAt       DateTime @default(now())
 }
+
 model EvaluationReport {
   id               Int       @id @default(autoincrement())
   submissionId     Int
@@ -221,4 +236,6 @@ model EvaluationReport {
   reviewedBy       Int?
   reviewedAt       DateTime?
   createdAt        DateTime  @default(now())
+
+  @@index([submissionId, createdAt])
 }

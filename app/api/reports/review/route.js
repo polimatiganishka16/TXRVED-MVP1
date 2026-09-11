@@ -1,6 +1,7 @@
 const { parseCookies, verifyToken } = require('../../../../lib/session');
 const { PrismaClient } = require('@prisma/client');
 const resend = require('../../../../lib/resend');
+const { redis } = require('../../../../lib/redis');
 
 const prisma = new PrismaClient();
 
@@ -223,6 +224,10 @@ export async function POST(request) {
     }
 
     const updated = await prisma.evaluationReport.update({ where: { id: Number(reportId) }, data: updateData });
+
+    if (redis) {
+      await redis.del(`report:${updated.submissionId}`);
+    }
 
     console.log('APPROVAL SAVED', { reportId: updated.id, status: updated.status, submissionId: updated.submissionId });
 

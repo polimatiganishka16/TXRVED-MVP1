@@ -30,12 +30,26 @@ async function getAdminDashboardData() {
     prisma.submission.findMany({
       take: 5,
       orderBy: { id: 'desc' },
-      include: { candidate: true },
+      select: {
+        submittedAt: true,
+        candidate: {
+          select: {
+            name: true,
+          },
+        },
+      },
     }),
     prisma.evaluationResult.findMany({
       take: 5,
       orderBy: { createdAt: 'desc' },
-      include: { evaluator: true },
+      select: {
+        createdAt: true,
+        evaluator: {
+          select: {
+            name: true,
+          },
+        },
+      },
     }),
   ]);
 
@@ -118,7 +132,15 @@ async function getAdminDashboardData() {
     recentActivity,
     scenarios: await (async () => {
       try {
-        const scenarios = await prisma.scenario.findMany({ orderBy: { createdAt: 'asc' } });
+        const scenarios = await prisma.scenario.findMany({
+          orderBy: { createdAt: 'asc' },
+          select: {
+            id: true,
+            title: true,
+            icon: true,
+            accent: true,
+          },
+        });
         const counts = await Promise.all(scenarios.map(s => prisma.submission.count({ where: { scenarioId: s.id } }).catch(() => 0)));
         return scenarios.map((s, i) => ({ id: s.id, title: s.title, icon: s.icon, accent: s.accent, attemptCount: Number(counts[i] || 0) }));
       } catch (e) {

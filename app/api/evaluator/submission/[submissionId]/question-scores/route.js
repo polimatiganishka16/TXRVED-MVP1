@@ -19,7 +19,20 @@ export async function GET(req) {
 
     const questionScores = await prisma.questionScore.findMany({
       where: { submissionId },
-      orderBy: { questionId: 'asc' }
+      orderBy: { questionId: 'asc' },
+      select: {
+        id: true,
+        submissionId: true,
+        attemptId: true,
+        questionId: true,
+        score: true,
+        understandingEvidence: true,
+        awarenessEvidence: true,
+        decisionEvidence: true,
+        actionabilityEvidence: true,
+        clarityEvidence: true,
+        createdAt: true,
+      },
     });
 
     const questionIds = questionScores.map((score) => score.questionId);
@@ -29,6 +42,11 @@ export async function GET(req) {
         id: { in: questionIds },
       },
       orderBy: { orderNo: 'asc' },
+      select: {
+        id: true,
+        questionText: true,
+        orderNo: true,
+      },
     });
 
     const questionsById = new Map(questions.map((q) => [q.id, q]));
@@ -36,7 +54,10 @@ export async function GET(req) {
     // FETCH: AI Missed Evidence from AIEvidenceAudit
     const aiAudit = await prisma.aIEvidenceAudit.findFirst({
       where: { submissionId },
-      orderBy: { id: 'desc' }
+      orderBy: { id: 'desc' },
+      select: {
+        audit: true,
+      },
     });
 
     let allAiMissedEvidence = [];

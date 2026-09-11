@@ -4,6 +4,8 @@ import DynamicAssessmentClient from '../../../components/assessment/DynamicAsses
 
 export const dynamic = 'force-dynamic';
 
+import { getOrSetCache } from '../../../lib/cache';
+
 async function getScenarioData(scenarioId) {
   const id = Number(scenarioId);
 
@@ -11,23 +13,37 @@ async function getScenarioData(scenarioId) {
     return null;
   }
 
-  const scenario = await prisma.scenario.findUnique({
-    where: { id },
-    include: {
-      questions: {
-        orderBy: {
-          orderNo: 'asc',
-        },
-        include: {
-          options: {
-            orderBy: {
-              id: 'asc',
+  const scenario = await getOrSetCache(`scenario:${id}:questions`, async () => {
+    return prisma.scenario.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        category: true,
+        icon: true,
+        level: true,
+        levelColor: true,
+        questions: {
+          orderBy: { orderNo: 'asc' },
+          select: {
+            id: true,
+            questionText: true,
+            questionType: true,
+            orderNo: true,
+            options: {
+              orderBy: { id: 'asc' },
+              select: {
+                id: true,
+                optionText: true,
+                imageUrl: true,
+              },
             },
           },
         },
       },
-    },
-  });
+    });
+  }, 60 * 60);
 
   if (!scenario) {
     return null;

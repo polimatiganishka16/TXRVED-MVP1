@@ -23,7 +23,10 @@ export async function GET(req) {
       return new Response(JSON.stringify({ success: false, message: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
     }
 
-    const candidate = await prisma.candidate.findUnique({ where: { userId: payload.id } });
+    const candidate = await prisma.candidate.findUnique({
+      where: { userId: payload.id },
+      select: { id: true },
+    });
     if (!candidate) {
       return new Response(JSON.stringify({ success: false, message: 'Candidate profile not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
     }
@@ -44,6 +47,12 @@ export async function GET(req) {
     const reports = await prisma.evaluationReport.findMany({
       where: { submissionId: { in: submissionIds } },
       orderBy: { createdAt: 'desc' },
+      select: {
+        submissionId: true,
+        status: true,
+        reviewedAt: true,
+        evaluatorComment: true,
+      },
     });
 
 const scenarioMap = new Map(

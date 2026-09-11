@@ -31,18 +31,21 @@ export async function GET(req) {
       return new Response(JSON.stringify({ success: false, message: 'Invalid submission ID' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
-    const candidate = await prisma.candidate.findUnique({ where: { userId: payload.id } });
+    const candidate = await prisma.candidate.findUnique({
+      where: { userId: payload.id },
+      select: { id: true },
+    });
     if (!candidate) {
       return new Response(JSON.stringify({ success: false, message: 'Candidate profile not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
     }
 
     const submission = await prisma.submission.findFirst({
-  where: { id: submissionId, candidateId: candidate.id },
-  select: {
-    id: true,
-    scenarioId: true,
-  },
-});
+      where: { id: submissionId, candidateId: candidate.id },
+      select: {
+        id: true,
+        scenarioId: true,
+      },
+    });
 
     if (!submission) {
       return new Response(JSON.stringify({ success: false, message: 'Submission not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
@@ -51,6 +54,14 @@ export async function GET(req) {
     const report = await prisma.evaluationReport.findFirst({
       where: { submissionId },
       orderBy: { id: 'desc' },
+      select: {
+        submissionId: true,
+        status: true,
+        reviewedAt: true,
+        evaluatorComment: true,
+        reportData: true,
+        modifiedReport: true,
+      },
     });
 
     if (!report) {

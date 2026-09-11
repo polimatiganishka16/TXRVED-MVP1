@@ -17,9 +17,24 @@ export async function GET() {
       orderBy: {
         submittedAt: 'desc',
       },
-      include: {
-        candidate: true,
-        attempt: true,
+      select: {
+        id: true,
+        scenarioId: true,
+        submittedAt: true,
+        candidate: {
+          select: {
+            candidate_code: true,
+          },
+        },
+        attempt: {
+          select: {
+            candidate: {
+              select: {
+                candidate_code: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -27,6 +42,12 @@ export async function GET() {
     const evaluations = await prisma.evaluation.findMany({
       where: {
         responseId: { in: submissionIds },
+      },
+      select: {
+        responseId: true,
+        capabilityIndex: true,
+        confidenceIndex: true,
+        coverageIndex: true,
       },
     });
     const evaluationBySubmission = new Map(
@@ -36,6 +57,10 @@ export async function GET() {
     const reports = await prisma.evaluationReport.findMany({
       where: {
         submissionId: { in: submissionIds },
+      },
+      select: {
+        submissionId: true,
+        status: true,
       },
     });
 

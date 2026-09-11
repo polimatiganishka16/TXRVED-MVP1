@@ -44,11 +44,22 @@ export async function GET(req) {
 
     const submission = await prisma.submission.findUnique({
       where: { id: submissionId },
-      include: {
-        candidate: true,
+      select: {
+        id: true,
+        scenarioId: true,
+        submittedAt: true,
+        candidate: {
+          select: {
+            candidate_code: true,
+          },
+        },
         attempt: {
-          include: {
-            candidate: true,
+          select: {
+            candidate: {
+              select: {
+                candidate_code: true,
+              },
+            },
           },
         },
       },
@@ -61,11 +72,26 @@ export async function GET(req) {
     const answers = await prisma.answer.findMany({
       where: { submissionId },
       orderBy: { questionId: 'asc' },
+      select: {
+        id: true,
+        questionId: true,
+        answer: true,
+      },
     });
 
     const evaluation = await prisma.evaluation.findFirst({
       where: { responseId: submissionId },
       orderBy: { id: 'desc' },
+      select: {
+        understanding: true,
+        awareness: true,
+        decision: true,
+        actionability: true,
+        clarity: true,
+        capabilityIndex: true,
+        confidenceIndex: true,
+        coverageIndex: true,
+      },
     });
 
     const answerIds = answers.map(answer => answer.id);
@@ -75,6 +101,11 @@ export async function GET(req) {
           responseId: { in: answerIds },
         },
         orderBy: { id: 'asc' },
+        select: {
+          type: true,
+          keyword: true,
+          sentence: true,
+        },
       })
       : [];
 
@@ -98,6 +129,12 @@ export async function GET(req) {
     const scenarioQuestions = await prisma.question.findMany({
       where: { scenarioId: submission.scenarioId },
       orderBy: { orderNo: 'asc' },
+      select: {
+        id: true,
+        questionText: true,
+        questionType: true,
+        orderNo: true,
+      },
     });
 
     const questionByDbId = new Map(
@@ -122,7 +159,10 @@ export async function GET(req) {
     // FETCH: AI Missed Evidence from AIEvidenceAudit
     const aiAudit = await prisma.aIEvidenceAudit.findFirst({
       where: { submissionId },
-      orderBy: { id: 'desc' }
+      orderBy: { id: 'desc' },
+      select: {
+        audit: true,
+      },
     });
 
     let aiMissedEvidence = [];
@@ -137,7 +177,13 @@ export async function GET(req) {
     // FETCH: Capability Traits for this submission
     const capabilityTraitRecords = await prisma.capabilityTrait.findMany({
       where: { submissionId },
-      orderBy: { id: 'asc' }
+      orderBy: { id: 'asc' },
+      select: {
+        id: true,
+        traitName: true,
+        confidence: true,
+        evidence: true,
+      },
     });
 
     const capabilityTraits = capabilityTraitRecords.map(trait => ({
@@ -150,7 +196,12 @@ export async function GET(req) {
     // FETCH: Capability Insights for this submission
     const insightRecord = await prisma.capabilityInsight.findFirst({
       where: { submissionId },
-      orderBy: { id: 'desc' }
+      orderBy: { id: 'desc' },
+      select: {
+        strengths: true,
+        improvements: true,
+        recommendations: true,
+      },
     });
 
     const capabilityInsights = insightRecord ? {
@@ -166,7 +217,10 @@ export async function GET(req) {
     // FETCH: Report status for this submission
     const report = await prisma.evaluationReport.findFirst({
       where: { submissionId },
-      orderBy: { id: 'desc' }
+      orderBy: { id: 'desc' },
+      select: {
+        status: true,
+      },
     });
 
     return Response.json({
