@@ -1,4 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
+const { redis } = require('../../../../lib/redis');
 
 const prisma = new PrismaClient();
 
@@ -337,6 +338,10 @@ export async function POST(req) {
       });
 
     console.log("EVALUATION REPORT SAVED", report.id);
+
+    if (redis) {
+      await redis.del(`report:${report.submissionId}`);
+    }
 
     // Final success response including evaluation, traits, insights, and report
     const responseBody = {

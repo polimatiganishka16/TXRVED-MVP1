@@ -30,7 +30,7 @@ export async function GET(req) {
         },
       });
 
-      if (!latestReport || latestReport.status === 'PENDING') {
+      if (!latestReport || latestReport.reportData === null || latestReport.reportData === undefined) {
         return null;
       }
 
@@ -38,6 +38,26 @@ export async function GET(req) {
     }, 60 * 60 * 4);
 
     if (!report) {
+      const pendingReport = await prisma.evaluationReport.findFirst({
+        where: { submissionId },
+        orderBy: { id: 'desc' },
+        select: {
+          id: true,
+          submissionId: true,
+          reportData: true,
+          status: true,
+          evaluatorComment: true,
+          modifiedReport: true,
+          reviewedBy: true,
+          reviewedAt: true,
+          createdAt: true,
+        },
+      });
+
+      if (pendingReport) {
+        return new Response(JSON.stringify({ success: true, report: pendingReport }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+
       return new Response(JSON.stringify({ success: false, message: 'Report not found', report: null }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
 

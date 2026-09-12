@@ -14,6 +14,7 @@ export default function EvaluatorReportPage() {
 
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showRejectBox, setShowRejectBox] = useState(false);
   const [showModifyBox, setShowModifyBox] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
@@ -85,21 +86,56 @@ export default function EvaluatorReportPage() {
   };
 
   useEffect(() => {
-    async function loadReport() {
+    let mounted = true;
+
+    async function loadReport(isInitialLoad = false) {
       try {
         const res = await fetch(`/api/reports/submission/${submissionId}`);
         const data = await res.json();
+        if (!mounted) return;
         if (data.success) {
           setReport(data.report);
+          setError(null);
+        } else if (isInitialLoad) {
+          setError(data.message || data.error || 'Unable to load report');
         }
       } catch (error) {
+        if (!mounted) return;
         console.error('REPORT LOAD ERROR:', error);
+        if (isInitialLoad) setError(error.message || 'Unable to load report');
       } finally {
-        setLoading(false);
+        if (mounted && isInitialLoad) setLoading(false);
       }
     }
-    loadReport();
+
+    loadReport(true);
+
+    return () => {
+      mounted = false;
+    };
   }, [submissionId]);
+
+  useEffect(() => {
+    if (!report || report.status?.toUpperCase() !== 'PENDING' || report.reportData) return undefined;
+
+    let mounted = true;
+    const poll = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/reports/submission/${submissionId}`);
+        const data = await res.json();
+        if (mounted && data.success) {
+          setReport(data.report);
+        }
+      } catch (pollError) {
+        console.error('REPORT POLL ERROR:', pollError);
+      }
+    }, 3000);
+
+    return () => {
+      mounted = false;
+      clearInterval(poll);
+    };
+  }, [report, submissionId]);
 
   if (loading) {
     return (
@@ -109,10 +145,26 @@ export default function EvaluatorReportPage() {
     );
   }
 
+  if (error) {
+    return (
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0f1623 0%, #121826 40%, #182235 70%, #1a2540 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ color: '#FECACA' }}>{error}</div>
+      </div>
+    );
+  }
+
   if (!report) {
     return (
       <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0f1623 0%, #121826 40%, #182235 70%, #1a2540 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ color: '#FECACA' }}>Report not found</div>
+      </div>
+    );
+  }
+
+  if (report.status?.toUpperCase() === 'PENDING' && !report.reportData) {
+    return (
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0f1623 0%, #121826 40%, #182235 70%, #1a2540 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ color: '#FCD34D' }}>Report is being generated. This page will update automatically.</div>
       </div>
     );
   }
