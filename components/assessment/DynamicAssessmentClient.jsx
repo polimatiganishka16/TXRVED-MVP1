@@ -146,6 +146,7 @@ function normalizeQuestion(question, index) {
   const normalizedType = normalizeQuestionType(question.questionType || question.type || 'short_text');
   const baseQuestion = {
     id: question.id,
+    scenarioId: question.scenarioId ?? question.scenario_id,
     number: question.orderNo ?? question.number ?? index + 1,
     type: normalizedType,
     question: question.questionText || question.question || question.prompt || 'Untitled question',

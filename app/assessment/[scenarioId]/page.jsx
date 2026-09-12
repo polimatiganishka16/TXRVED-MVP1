@@ -13,7 +13,7 @@ async function getScenarioData(scenarioId) {
     return null;
   }
 
-  const scenario = await getOrSetCache(`scenario:${id}:questions`, async () => {
+  const scenario = await getOrSetCache(`scenario:${id}:questions:v2`, async () => {
     return prisma.scenario.findUnique({
       where: { id },
       select: {
@@ -28,6 +28,7 @@ async function getScenarioData(scenarioId) {
           orderBy: { orderNo: 'asc' },
           select: {
             id: true,
+            scenarioId: true,
             questionText: true,
             questionType: true,
             orderNo: true,
