@@ -116,7 +116,9 @@ export default function EvaluatorReportPage() {
   }, [submissionId]);
 
   useEffect(() => {
-    if (!report || report.status?.toUpperCase() !== 'PENDING' || report.reportData) return undefined;
+    const status = report?.status?.toUpperCase();
+    const shouldPoll = status === 'PROCESSING' || (status === 'PENDING' && !report.reportData);
+    if (!shouldPoll) return undefined;
 
     let mounted = true;
     const poll = setInterval(async () => {
@@ -161,10 +163,18 @@ export default function EvaluatorReportPage() {
     );
   }
 
-  if (report.status?.toUpperCase() === 'PENDING' && !report.reportData) {
+  if (report.status?.toUpperCase() === 'PROCESSING' || (report.status?.toUpperCase() === 'PENDING' && !report.reportData)) {
     return (
       <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0f1623 0%, #121826 40%, #182235 70%, #1a2540 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ color: '#FCD34D' }}>Report is being generated. This page will update automatically.</div>
+        <div style={{ color: '#FCD34D' }}>Evaluation is processing. This page will update automatically.</div>
+      </div>
+    );
+  }
+
+  if (report.status?.toUpperCase() === 'FAILED') {
+    return (
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0f1623 0%, #121826 40%, #182235 70%, #1a2540 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ color: '#FECACA' }}>Evaluation failed. Refresh the page or contact an administrator.</div>
       </div>
     );
   }

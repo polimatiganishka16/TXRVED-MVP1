@@ -77,19 +77,19 @@ export default function ReportsPage() {
                       <td style={{ padding: '16px', verticalAlign: 'middle' }}>
                         <button
                           onClick={() => router.push(`/dashboard/candidate/reports/${report.submissionId}`)}
-                          disabled={report.status?.toUpperCase() === 'PENDING'}
+                          disabled={['PROCESSING', 'FAILED', 'PENDING'].includes(report.status?.toUpperCase())}
                           style={{
                             padding: '10px 18px',
                             borderRadius: '12px',
                             border: 'none',
                             fontWeight: 700,
-                            cursor: report.status?.toUpperCase() === 'PENDING' ? 'not-allowed' : 'pointer',
+                            cursor: ['PROCESSING', 'FAILED', 'PENDING'].includes(report.status?.toUpperCase()) ? 'not-allowed' : 'pointer',
                             background: report.status?.toUpperCase() === 'REJECT' ? 'rgba(248,113,113,0.18)' : 'rgba(59,130,246,0.18)',
                             color: report.status?.toUpperCase() === 'REJECT' ? '#FECACA' : '#BFDBFE',
-                            opacity: report.status?.toUpperCase() === 'PENDING' ? 0.5 : 1,
+                            opacity: ['PROCESSING', 'FAILED', 'PENDING'].includes(report.status?.toUpperCase()) ? 0.5 : 1,
                           }}
                         >
-                          {report.status?.toUpperCase() === 'REJECT' ? 'View Reason' : 'View Report'}
+                          {report.status?.toUpperCase() === 'PROCESSING' ? 'Processing' : report.status?.toUpperCase() === 'FAILED' ? 'Unavailable' : report.status?.toUpperCase() === 'REJECT' ? 'View Reason' : 'View Report'}
                         </button>
                       </td>
                     </tr>
@@ -107,7 +107,10 @@ export default function ReportsPage() {
 function StatusBadge({ status }) {
   const upper = (status || '').toUpperCase();
   const config = {
+    PROCESSING: { label: 'Processing', background: 'rgba(251,191,36,0.12)', color: '#FCD34D', border: '1px solid rgba(251,191,36,0.25)' },
+    COMPLETED: { label: 'Ready for Review', background: 'rgba(59,130,246,0.12)', color: '#BFDBFE', border: '1px solid rgba(59,130,246,0.25)' },
     PENDING: { label: 'Under Review', background: 'rgba(148,163,184,0.12)', color: '#CBD5E1', border: '1px solid rgba(148,163,184,0.25)' },
+    FAILED: { label: 'Evaluation Failed', background: 'rgba(248,113,113,0.12)', color: '#FECACA', border: '1px solid rgba(248,113,113,0.25)' },
     APPROVE: { label: 'Approved', background: 'rgba(16,185,129,0.12)', color: '#A7F3D0', border: '1px solid rgba(16,185,129,0.25)' },
     MODIFY: { label: 'Modified', background: 'rgba(59,130,246,0.12)', color: '#BFDBFE', border: '1px solid rgba(59,130,246,0.25)' },
     REJECT: { label: 'Rejected', background: 'rgba(248,113,113,0.12)', color: '#FECACA', border: '1px solid rgba(248,113,113,0.25)' },

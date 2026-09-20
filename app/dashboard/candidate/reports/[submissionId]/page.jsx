@@ -16,6 +16,9 @@ export default function CandidateReportDetailPage() {
 
   useEffect(() => {
     let active = true;
+    let poll;
+    let attempts = 0;
+
     async function loadReport() {
       try {
         const res = await fetch(`/api/reports/candidate/submission/${submissionId}`);
@@ -29,6 +32,12 @@ export default function CandidateReportDetailPage() {
         }
 
         setReport(data.report);
+
+        const status = data.report?.status?.toUpperCase();
+        if (status === 'PROCESSING' && attempts < 40) {
+          attempts += 1;
+          poll = setTimeout(loadReport, 3000);
+        }
       } catch (err) {
         console.error('Candidate report detail load failed', err);
         if (active) setError('Unable to load report');
@@ -38,7 +47,10 @@ export default function CandidateReportDetailPage() {
     }
 
     loadReport();
-    return () => { active = false; };
+    return () => {
+      active = false;
+      if (poll) clearTimeout(poll);
+    };
   }, [submissionId]);
 
   const statusText = report?.status?.toUpperCase();
@@ -74,6 +86,14 @@ export default function CandidateReportDetailPage() {
           <div style={{ padding: '2rem', borderRadius: '20px', background: 'rgba(220,38,38,0.15)', border: '1px solid rgba(220,38,38,0.35)', color: '#FECACA' }}>{error}</div>
         ) : !report ? (
           <div style={{ padding: '2rem', borderRadius: '20px', background: 'rgba(15,23,42,0.9)', border: '1px solid rgba(255,255,255,0.06)' }}>Report not found.</div>
+        ) : statusText === 'PROCESSING' ? (
+          <div style={{ padding: '2rem', borderRadius: '20px', background: 'rgba(15,23,42,0.9)', border: '1px solid rgba(251,191,36,0.25)', color: '#FCD34D' }}>
+            Evaluation is processing. This page will update automatically.
+          </div>
+        ) : statusText === 'FAILED' ? (
+          <div style={{ padding: '2rem', borderRadius: '20px', background: 'rgba(220,38,38,0.15)', border: '1px solid rgba(220,38,38,0.35)', color: '#FECACA' }}>
+            Evaluation failed. Please refresh the page or contact an administrator.
+          </div>
         ) : (
           <ReportViewer 
             report={report} 

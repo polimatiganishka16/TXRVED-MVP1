@@ -15,6 +15,7 @@ export default function ReportViewer({ report, submissionId, scenario, showActio
   const statusConfig = {
     APPROVE: { label: 'Approved', icon: '🟢', accent: '#10B981', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.25)' },
     MODIFY: { label: 'Modified', icon: '🔵', accent: '#3B82F6', background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.25)' },
+    COMPLETED: { label: 'Ready for Review', icon: '🔵', accent: '#3B82F6', background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.25)' },
     PENDING: { label: 'Under Review', icon: '🟠', accent: '#F59E0B', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)' },
     REJECT: { label: 'Rejected', icon: '🔴', accent: '#EF4444', background: 'rgba(248,113,113,0.12)', border: '1px solid rgba(248,113,113,0.25)' },
   };

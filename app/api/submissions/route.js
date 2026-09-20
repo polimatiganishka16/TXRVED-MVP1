@@ -3,6 +3,7 @@
 const { PrismaClient } = require('@prisma/client');
 const resend = require('../../../lib/resend');
 const { assessmentSubmissionEmailTemplate } = require('../../../lib/emailTemplates');
+const { inngest } = require('../../../lib/inngest');
 
 const prisma = new PrismaClient();
 
@@ -230,44 +231,63 @@ export async function POST(req) {
       }
     }
 
-    // ─────────────────────────────────────
-    // STEP 4 — Trigger evaluation engine
-    // ─────────────────────────────────────
+    const existingReport = await prisma.evaluationReport.findFirst({
+      where: { submissionId: submission.id },
+      orderBy: { id: 'desc' },
+    });
 
-    const evaluationResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/api/evaluation/evaluate`,
-      {
-        method: 'POST',
-
-        headers: {
-          'Content-Type': 'application/json',
+    if (existingReport) {
+      await prisma.evaluationReport.update({
+        where: { id: existingReport.id },
+        data: {
+          status: 'PROCESSING',
+          reportData: {},
+          evaluatorComment: null,
+          modifiedReport: null,
+          reviewedBy: null,
+          reviewedAt: null,
         },
-
-        body: JSON.stringify({
+      });
+    } else {
+      await prisma.evaluationReport.create({
+        data: {
           submissionId: submission.id,
-          scenarioId,
-        }),
+          reportData: {},
+          status: 'PROCESSING',
+        },
+      });
+    }
+
+    try {
+      await inngest.send({
+        name: 'evaluation/submitted',
+        data: {
+          submissionId: submission.id,
+          scenarioId: Number(scenarioId),
+          attemptId: Number(attemptId),
+        },
+      });
+    } catch (eventError) {
+      const report = await prisma.evaluationReport.findFirst({
+        where: { submissionId: submission.id },
+        orderBy: { id: 'desc' },
+      });
+      if (report) {
+        await prisma.evaluationReport.update({
+          where: { id: report.id },
+          data: {
+            status: 'FAILED',
+            reportData: { error: 'Evaluation could not be queued.' },
+          },
+        });
       }
-    );
-
-    const evaluationData =
-      await evaluationResponse.json();
-
-    console.log(
-      "EVALUATION RESPONSE:",
-      evaluationData
-    );
-
-    // ─────────────────────────────────────
-    // STEP 5 — Return success
-    // ─────────────────────────────────────
+      throw eventError;
+    }
 
     return Response.json({
       success: true,
-
       submissionId: submission.id,
-
-      evaluation: evaluationData,
+      evaluationStatus: 'PROCESSING',
     });
 
   } catch (error) {

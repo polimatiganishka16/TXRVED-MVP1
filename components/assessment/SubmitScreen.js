@@ -337,19 +337,7 @@ export default function SubmitScreen({ meta, questions, answers, onRestart, onBa
         setSubmitting(false);
         return;
       }
-      // STEP 3 - run evaluation
-
-      await fetch('/api/evaluation/evaluate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          submissionId: saveData.submissionId,
-          scenarioId: meta.id
-        })
-      });
-      // STEP 3 — redirect to results page
+      // STEP 3 — redirect while background evaluation is processing
       setPhase('success');
 
     } catch (err) {
