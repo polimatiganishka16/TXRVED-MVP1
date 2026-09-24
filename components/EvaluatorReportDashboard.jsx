@@ -1,7 +1,12 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, Tooltip } from 'recharts';
+import dynamic from 'next/dynamic';
+
+const SignalRadarChart = dynamic(() => import('./SignalRadarChart'), {
+  ssr: false,
+  loading: () => <div style={{ height: '400px', display: 'grid', placeItems: 'center', color: '#94A3B8' }}>Loading chart...</div>,
+});
 
 export default function EvaluatorReportDashboard({ report, submissionId, showActions, onAction }) {
   const router = useRouter();
@@ -128,17 +133,7 @@ export default function EvaluatorReportDashboard({ report, submissionId, showAct
       {/* SECTION 4: RADAR CHART */}
       <div style={sectionContainerStyle}>
         <div style={sectionTitleStyle}>Signal Overview</div>
-        <div style={{ height: '400px', width: '100%', display: 'flex', justifyContent: 'center' }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <RadarChart data={radarData}>
-              <PolarGrid stroke="rgba(255,255,255,0.1)" />
-              <PolarAngleAxis dataKey="name" stroke="#94A3B8" />
-              <PolarRadiusAxis angle={90} domain={[0, 5]} stroke="#64748B" />
-              <Radar name="Score" dataKey="value" stroke="#6366F1" fill="#6366F1" fillOpacity={0.3} />
-              <Tooltip contentStyle={{ background: 'rgba(15,23,42,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#E2E8F0' }} />
-            </RadarChart>
-          </ResponsiveContainer>
-        </div>
+        <SignalRadarChart data={radarData} />
       </div>
 
       {/* SECTION 5: QUESTION WISE ANALYSIS */}

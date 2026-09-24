@@ -39,35 +39,41 @@ function TypeBadge({ type }) {
 }
 
 export default function AdminScenariosPage() {
-  useEffect(() => {
-  fetchScenarios();
-}, []);
-
-const fetchScenarios = async () => {
-  try {
-    const response = await fetch("/api/admin/scenarios");
-    const data = await response.json();
-
-    setScenarios(data);
-
-    if (data.length > 0) {
-      setSelected(data[0]);
-    }
-  } catch (error) {
-    console.error("Failed to fetch scenarios:", error);
-  }
-};
   const [scenarios, setScenarios] = useState([]);
   const [selected, setSelected] = useState(null);
   const [hoveredId, setHoveredId] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [scenarioToDelete, setScenarioToDelete] = useState(null);
   const router = useRouter();
+
+  const fetchScenarios = async () => {
+  try {
+    const response = await fetch("/api/admin/scenarios");
+    const data = await response.json();
+
+    setScenarios(data);
+    setSelected(data[0] || null);
+  } catch (error) {
+    console.error("Failed to fetch scenarios:", error);
+  }
+};
+
+  useEffect(() => {
+    const timeoutId = setTimeout(fetchScenarios, 0);
+
+    return () => clearTimeout(timeoutId);
+  }, []);
+
   const deleteScenario = async (id) => {
   try {
     const response = await fetch(`/api/admin/scenarios/${id}`, {
       method: "DELETE",
     });
+
+    if (response.status === 404) {
+      await fetchScenarios();
+      return;
+    }
 
     if (!response.ok) {
       throw new Error("Failed to delete");

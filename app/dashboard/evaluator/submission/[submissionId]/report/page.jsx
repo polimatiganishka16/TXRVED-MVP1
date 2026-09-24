@@ -2,10 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import DashboardHeader from '../../../../../../components/DashboardHeader';
 import EvaluatorReportDashboard from '../../../../../../components/EvaluatorReportDashboard';
-import RejectModal from '../../../../../../components/RejectModal';
-import ModifyReportModal from '../../../../../../components/ModifyReportModal';
+
+const RejectModal = dynamic(() => import('../../../../../../components/RejectModal'), {
+  ssr: false,
+});
+
+const ModifyReportModal = dynamic(() => import('../../../../../../components/ModifyReportModal'), {
+  ssr: false,
+});
 
 export default function EvaluatorReportPage() {
   const params = useParams();
@@ -115,13 +122,20 @@ export default function EvaluatorReportPage() {
     };
   }, [submissionId]);
 
+  const reportStatus = report?.status?.toUpperCase();
+  const hasReportData = report?.reportData !== null && report?.reportData !== undefined;
+
   useEffect(() => {
-    const status = report?.status?.toUpperCase();
-    const shouldPoll = status === 'PROCESSING' || (status === 'PENDING' && !report.reportData);
+    const shouldPoll = reportStatus === 'PROCESSING' || (reportStatus === 'PENDING' && !hasReportData);
     if (!shouldPoll) return undefined;
 
     let mounted = true;
-    const poll = setInterval(async () => {
+    let polling = false;
+    let timeoutId;
+
+    const poll = async () => {
+      if (!mounted || polling) return;
+      polling = true;
       try {
         const res = await fetch(`/api/reports/submission/${submissionId}`);
         const data = await res.json();
@@ -130,14 +144,19 @@ export default function EvaluatorReportPage() {
         }
       } catch (pollError) {
         console.error('REPORT POLL ERROR:', pollError);
+      } finally {
+        polling = false;
+        if (mounted) timeoutId = setTimeout(poll, 3000);
       }
-    }, 3000);
+    };
+
+    timeoutId = setTimeout(poll, 3000);
 
     return () => {
       mounted = false;
-      clearInterval(poll);
+      clearTimeout(timeoutId);
     };
-  }, [report, submissionId]);
+  }, [hasReportData, reportStatus, submissionId]);
 
   if (loading) {
     return (
@@ -163,7 +182,7 @@ export default function EvaluatorReportPage() {
     );
   }
 
-  if (report.status?.toUpperCase() === 'PROCESSING' || (report.status?.toUpperCase() === 'PENDING' && !report.reportData)) {
+  if (reportStatus === 'PROCESSING' || (reportStatus === 'PENDING' && !hasReportData)) {
     return (
       <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0f1623 0%, #121826 40%, #182235 70%, #1a2540 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ color: '#FCD34D' }}>Evaluation is processing. This page will update automatically.</div>
@@ -171,7 +190,7 @@ export default function EvaluatorReportPage() {
     );
   }
 
-  if (report.status?.toUpperCase() === 'FAILED') {
+  if (reportStatus === 'FAILED') {
     return (
       <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0f1623 0%, #121826 40%, #182235 70%, #1a2540 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ color: '#FECACA' }}>Evaluation failed. Refresh the page or contact an administrator.</div>
@@ -202,27 +221,31 @@ export default function EvaluatorReportPage() {
           ← Back to Submissions
         </button>
 
-        <RejectModal
-          show={showRejectBox}
-          reason={rejectReason}
-          onReasonChange={setRejectReason}
-          onCancel={() => {
-            setShowRejectBox(false);
-            setRejectReason('');
-          }}
-          onConfirm={() => {
-            handleReportAction('REJECT', rejectReason, true);
-            setShowRejectBox(false);
-            setRejectReason('');
-          }}
-        />
+        {showRejectBox && (
+          <RejectModal
+            show
+            reason={rejectReason}
+            onReasonChange={setRejectReason}
+            onCancel={() => {
+              setShowRejectBox(false);
+              setRejectReason('');
+            }}
+            onConfirm={() => {
+              handleReportAction('REJECT', rejectReason, true);
+              setShowRejectBox(false);
+              setRejectReason('');
+            }}
+          />
+        )}
 
-        <ModifyReportModal
-          report={report}
-          isOpen={showModifyBox}
-          onClose={() => setShowModifyBox(false)}
-          onSave={handleModifyReport}
-        />
+        {showModifyBox && (
+          <ModifyReportModal
+            report={report}
+            isOpen
+            onClose={() => setShowModifyBox(false)}
+            onSave={handleModifyReport}
+          />
+        )}
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { fetchSession, getAuthUser, redirectPathForRole } from '../../../components/auth/auth';
+import { fetchSession, redirectPathForRole } from '../../../components/auth/auth';
 import DashboardHeader from '../../../components/DashboardHeader';
 import RejectModal from '../../../components/RejectModal';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -15,7 +15,7 @@ export default function EvaluatorDashboardPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [sortDir, setSortDir] = useState('desc');
-    const [user, setUser] = useState(() => getAuthUser());
+    const [user, setUser] = useState(null);
     const updateReportStatus = async (
         submissionId,
         action,
@@ -160,7 +160,7 @@ export default function EvaluatorDashboardPage() {
                 }} />
             </div>
 
-            <DashboardHeader />
+            <DashboardHeader user={user} />
 
             <main style={{ position: 'relative', zIndex: 1 }}>
                 {/* HEADER */}
@@ -458,7 +458,7 @@ export default function EvaluatorDashboardPage() {
                                                         {submission.coverageIndex != null ? submission.coverageIndex : '--'}
                                                     </td>
                                                     <td style={{ padding: '1.25rem' }}>
-                                                        {submission.status?.toLowerCase() === 'pending' && (
+                                                        {['pending', 'completed'].includes(submission.status?.toLowerCase()) && (
                                                             <div
                                                                 style={{
                                                                     display: 'flex',

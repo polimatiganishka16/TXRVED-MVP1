@@ -1,9 +1,13 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import ProfileMenu from './ProfileMenu';
-import NotificationModal from './NotificationModal';
 
-export default function DashboardHeader() {
+const NotificationModal = dynamic(() => import('./NotificationModal'), {
+    ssr: false,
+});
+
+export default function DashboardHeader({ user }) {
     const [isNotificationOpen, setIsNotificationOpen] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
 
@@ -94,12 +98,12 @@ export default function DashboardHeader() {
                             )}
                         </button>
                     </div>
-                    <ProfileMenu />
+                    <ProfileMenu user={user} />
                 </div>
             </header>
-            <NotificationModal isOpen={isNotificationOpen} onClose={() => setIsNotificationOpen(false)} onUnreadCountChange={setUnreadCount} />
-
-            <NotificationModal isOpen={isNotificationOpen} onClose={() => setIsNotificationOpen(false)} />
+            {isNotificationOpen && (
+                <NotificationModal isOpen onClose={() => setIsNotificationOpen(false)} onUnreadCountChange={setUnreadCount} />
+            )}
         </>
     );
 }

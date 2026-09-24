@@ -239,6 +239,7 @@ export default function AssessmentShell({ meta, questions, answers, onAnswer, on
   // ── Prev ──
   const goPrev = useCallback(() => {
     if (currentIndex === 0) return;
+    setHasFinished(false);
     setDirection(-1);
     setCurrentIndex(currentIndex - 1);
     setValidationError('');

@@ -3,13 +3,17 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { fetchSession, logout as performLogout, clearAuthUser, getAuthUser } from './auth/auth';
 
-export default function ProfileMenu() {
+export default function ProfileMenu({ user: providedUser }) {
     const [open, setOpen] = useState(false);
-    const [user, setUser] = useState(null);
+    const [user, setUser] = useState(() => providedUser ?? null);
     const ref = useRef();
     const router = useRouter();
 
     useEffect(() => {
+        if (providedUser !== undefined) {
+            return undefined;
+        }
+
         let mounted = true;
         async function load() {
             const s = await fetchSession();
@@ -19,9 +23,10 @@ export default function ProfileMenu() {
         const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
         document.addEventListener('click', onDoc);
         return () => { mounted = false; document.removeEventListener('click', onDoc); };
-    }, []);
+    }, [providedUser]);
 
-    const initials = (user?.name || user?.email || 'U').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+    const currentUser = providedUser !== undefined ? providedUser : user;
+    const initials = (currentUser?.name || currentUser?.email || 'U').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
     const handleLogout = async () => {
         try { await performLogout(); } catch (e) { }
@@ -34,20 +39,20 @@ export default function ProfileMenu() {
             <button onClick={() => setOpen(o => !o)} aria-label="Profile" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.03)', color: '#fff' }}>
                 <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#6366F1,#7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700 }}>{initials}</div>
                 <div style={{ textAlign: 'left' }}>
-                    <div style={{ fontSize: 13, fontWeight: 700 }}>{user?.name || 'User'}</div>
-                    <div style={{ fontSize: 11, color: '#94A3B8' }}>{user?.role || ''}</div>
+                    <div style={{ fontSize: 13, fontWeight: 700 }}>{currentUser?.name || 'User'}</div>
+                    <div style={{ fontSize: 11, color: '#94A3B8' }}>{currentUser?.role || ''}</div>
                 </div>
             </button>
 
             {open && (
                 <div style={{ position: 'absolute', right: 0, marginTop: 8, width: 220, background: 'linear-gradient(145deg,#0b1020,#0f1726)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 12, boxShadow: '0 8px 28px rgba(0,0,0,0.5)', overflow: 'hidden' }}>
                     <div style={{ padding: 12, borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                        <div style={{ fontWeight: 700 }}>{user?.name || user?.email}</div>
-                        <div style={{ fontSize: 12, color: '#94A3B8' }}>{user?.email}</div>
-                        <div style={{ marginTop: 6, fontSize: 12, color: '#94A3B8' }}>Role: {user?.role || '—'}</div>
+                        <div style={{ fontWeight: 700 }}>{currentUser?.name || currentUser?.email}</div>
+                        <div style={{ fontSize: 12, color: '#94A3B8' }}>{currentUser?.email}</div>
+                        <div style={{ marginTop: 6, fontSize: 12, color: '#94A3B8' }}>Role: {currentUser?.role || '—'}</div>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <button onClick={() => { setOpen(false); router.push('/dashboard/' + (user?.role === 'ADMIN' ? 'admin' : user?.role === 'EVALUATOR' ? 'evaluator' : 'candidate')); }} style={{ padding: '10px 12px', background: 'transparent', border: 'none', textAlign: 'left', color: '#fff' }}>Dashboard</button>
+                        <button onClick={() => { setOpen(false); router.push('/dashboard/' + (currentUser?.role === 'ADMIN' ? 'admin' : currentUser?.role === 'EVALUATOR' ? 'evaluator' : 'candidate')); }} style={{ padding: '10px 12px', background: 'transparent', border: 'none', textAlign: 'left', color: '#fff' }}>Dashboard</button>
                         <button onClick={() => { setOpen(false); router.push('/profile'); }} style={{ padding: '10px 12px', background: 'transparent', border: 'none', textAlign: 'left', color: '#fff' }}>Profile</button>
                         <button
     onClick={() => {

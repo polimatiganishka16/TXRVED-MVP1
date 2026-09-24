@@ -178,16 +178,27 @@ export async function DELETE(request, { params }) {
     const { id } = await params;
 
     await prisma.scenario.delete({
-  where: {
-    id: Number(id),
-  },
-});
+      where: {
+        id: Number(id),
+      },
+    });
 
     return NextResponse.json({
       success: true,
     });
   } catch (error) {
     console.error(error);
+
+    if (error?.code === "P2025") {
+      return NextResponse.json(
+        {
+          error: "Scenario not found",
+        },
+        {
+          status: 404,
+        }
+      );
+    }
 
     return NextResponse.json(
       {
