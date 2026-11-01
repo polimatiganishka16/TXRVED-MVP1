@@ -1,5 +1,5 @@
 "use client";
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
@@ -8,6 +8,24 @@ export default function LoginPage() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        const url = new URL(window.location.href);
+        const googleError = url.searchParams.get('google_error');
+        const messages = {
+            candidate_only: 'Google login is available for candidate accounts only. Please use your regular login.',
+            unavailable: 'Google sign-in is not configured. Please use your regular login.',
+            failed: 'Google sign-in could not be completed. Please try again.',
+        };
+
+        if (googleError) {
+            if (messages[googleError]) {
+                window.setTimeout(() => setError(messages[googleError]), 0);
+            }
+            url.searchParams.delete('google_error');
+            window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+        }
+    }, []);
 
     function validate() {
         if (!email || !password) return 'Email/Candidate Code and password are required.';
@@ -70,6 +88,18 @@ export default function LoginPage() {
                 <button type="button" onClick={() => router.push('/forgot-password')} style={{ width: '100%', marginBottom: '12px', padding: '8px', background: 'transparent', border: 'none', color: '#818CF8', textAlign: 'left', fontSize: '14px', fontWeight: 500 }}>Forgot Password?</button>
 
                 <button type="submit" disabled={loading} style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'linear-gradient(135deg,#6366F1,#7C3AED)', color: '#fff', fontWeight: 700 }}>{loading ? 'Signing in...' : 'Sign in'}</button>
+
+                <div style={{ margin: '16px 0', borderTop: '1px solid rgba(255,255,255,0.1)' }} />
+
+                <a href="/api/auth/google/start" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.12)', color: '#E2E8F0', fontWeight: 600, textAlign: 'center', textDecoration: 'none' }}>
+                    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0012 23z" />
+                        <path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 010-4.2V7.06H2.18a11 11 0 000 9.88l3.66-2.84z" />
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1a11 11 0 00-9.82 6.06L5.84 9.9C6.71 7.3 9.14 5.38 12 5.38z" />
+                    </svg>
+                    Continue with Google
+                </a>
             </form>
         </div>
     );
