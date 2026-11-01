@@ -20,6 +20,13 @@ export async function GET(req) {
             return new Response(JSON.stringify({ message: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
         }
 
+        if (new URL(req.url).searchParams.get('unreadCountOnly') === 'true') {
+            const unreadCount = await prisma.notification.count({
+                where: { userId: payload.id, isRead: false },
+            });
+            return new Response(JSON.stringify({ unreadCount }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }
+
         const notifications = await prisma.notification.findMany({
             where: { userId: payload.id },
             orderBy: { createdAt: 'desc' },

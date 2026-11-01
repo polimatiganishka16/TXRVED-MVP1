@@ -12,20 +12,8 @@ const timelineSteps = ['Scenario Briefing', 'Assessment', 'Review', 'Submit'];
 
 export default function Home() {
     const [selectedScenario, setSelectedScenario] = useState(null);
-    const [hoveredCard, setHoveredCard] = useState(null);
     const [scenarios, setScenarios] = useState([]);
-    useEffect(() => {
-        fetch("/api/admin/scenarios")
-            .then((res) => res.json())
-            .then((data) => {
-                setScenarios(data);
-                // enrich scenarios with attempt counts for the logged-in candidate
-                enrichWithAttempts(data);
-            })
-            .catch((err) => {
-                console.error("Failed to load scenarios:", err);
-            });
-    }, []);
+    const [scenariosError, setScenariosError] = useState('');
 
     async function enrichWithAttempts(scenariosList) {
         try {
@@ -44,20 +32,44 @@ export default function Home() {
             const candidate = await candRes.json();
             if (!candidate || !candidate.id) return;
 
-            const counts = await Promise.all(
-                scenariosList.map((s) =>
-                    fetch(`/api/submissions/attempts?candidateId=${candidate.id}&scenarioId=${s.id}`)
-                        .then((r) => (r.ok ? r.json() : { attemptCount: 0 }))
-                        .catch(() => ({ attemptCount: 0 }))
-                )
+            const scenarioIds = scenariosList.map((scenario) => scenario.id);
+            const countsResponse = await fetch(
+                `/api/submissions/attempts?candidateId=${candidate.id}&scenarioIds=${scenarioIds.join(',')}`
             );
+            if (!countsResponse.ok) return;
+            const { counts } = await countsResponse.json();
+            if (!counts || typeof counts !== 'object' || Array.isArray(counts)) return;
 
-            const merged = scenariosList.map((s, i) => ({ ...s, attemptCount: counts[i]?.attemptCount ?? 0 }));
+            const merged = scenariosList.map((scenario) => ({
+                ...scenario,
+                attemptCount: Number(counts[scenario.id]) || 0,
+            }));
             setScenarios(merged);
         } catch (e) {
             console.error('Failed loading attempt counts', e);
         }
     }
+
+    useEffect(() => {
+        fetch("/api/admin/scenarios")
+            .then(async (res) => {
+                const data = await res.json();
+                if (!res.ok || !Array.isArray(data)) {
+                    throw new Error('Scenario API returned an invalid response');
+                }
+                return data;
+            })
+            .then((data) => {
+                setScenarios(data);
+                // enrich scenarios with attempt counts for the logged-in candidate
+                enrichWithAttempts(data);
+            })
+            .catch((err) => {
+                console.error("Failed to load scenarios:", err);
+                setScenarios([]);
+                setScenariosError('Unable to load scenarios right now. Please refresh the page to try again.');
+            });
+    }, []);
 
     return (
         <div style={{
@@ -175,17 +187,18 @@ export default function Home() {
                             gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',
                             gap: '1.5rem',
                         }}>
-                            {scenarios.map((s, i) => (
-                                <ScenarioCard
-                                    key={s.id}
-                                    scenario={s}
-                                    index={i}
-                                    isHovered={hoveredCard === s.id}
-                                    onHover={() => setHoveredCard(s.id)}
-                                    onLeave={() => setHoveredCard(null)}
-                                    onClick={() => setSelectedScenario(s)}
-                                />
-                            ))}
+                            {scenariosError ? (
+                                <p role="alert" style={{ color: '#FCA5A5', gridColumn: '1 / -1', textAlign: 'center' }}>
+                                    {scenariosError}
+                                </p>
+                            ) : scenarios.map((s, i) => (
+                                    <ScenarioCard
+                                        key={s.id}
+                                        scenario={s}
+                                        index={i}
+                                        onClick={() => setSelectedScenario(s)}
+                                    />
+                                ))}
                         </div>
                     </motion.div>
                 ) : (
@@ -200,7 +213,8 @@ export default function Home() {
     );
 }
 
-function ScenarioCard({ scenario, index, isHovered, onHover, onLeave, onClick }) {
+function ScenarioCard({ scenario, index, onClick }) {
+    const [isHovered, setIsHovered] = useState(false);
     const scenarioLevel = scenario?.level || 'Unknown';
     const scenarioCategory = scenario?.category || 'Uncategorized';
     const levelAccent =
@@ -215,8 +229,8 @@ function ScenarioCard({ scenario, index, isHovered, onHover, onLeave, onClick })
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: index * 0.08 }}
-            onMouseEnter={onHover}
-            onMouseLeave={onLeave}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
             style={{
                 background: isHovered
                     ? 'linear-gradient(145deg, #25354F, #2B3C59)'

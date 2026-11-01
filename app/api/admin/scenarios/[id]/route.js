@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/prisma";
+import { invalidateCache } from "../../../../../lib/cache";
 export async function GET(request, { params }) {
   try {
     const { id } = await params;
@@ -159,6 +160,11 @@ for (const [index, question] of body.questions.entries()) {
 },
     });
 
+    await Promise.all([
+      invalidateCache("scenarios:active"),
+      invalidateCache(`scenario:${id}:questions:v2`),
+    ]);
+
     return NextResponse.json(scenario);
   } catch (error) {
     console.error(error);
@@ -182,6 +188,11 @@ export async function DELETE(request, { params }) {
         id: Number(id),
       },
     });
+
+    await Promise.all([
+      invalidateCache("scenarios:active"),
+      invalidateCache(`scenario:${id}:questions:v2`),
+    ]);
 
     return NextResponse.json({
       success: true,

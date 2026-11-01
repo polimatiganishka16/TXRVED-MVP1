@@ -14,7 +14,7 @@ export default function DashboardHeader({ user }) {
     useEffect(() => {
         const fetchUnreadCount = async () => {
             try {
-                const response = await fetch('/api/notifications');
+                const response = await fetch('/api/notifications?unreadCountOnly=true');
                 if (response.ok) {
                     const data = await response.json();
                     setUnreadCount(data.unreadCount || 0);
